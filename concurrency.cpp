@@ -1,13 +1,19 @@
 #include <iostream>
 #include <cstdlib> //for srand and rand
 #include <time.h> //for time used to generate a seed
-#include <sys/shm.h>  //for shmget
+#include <unistd.h>
+//#include <sys/shm.h>  //for shmget
 
 //*** From stackoverflow guide
-#include <sys/types.h> //key_t, sem_t, pid_t
-#include <stdlib.h>     //exit(), malloc(), free()
-#include <semaphore.h>   //sem_open, sem_destroy(), sem_wait() ..
-#include <fcntl.h>      //O_CREATE, O_EXEC
+#include <stdio.h>          /* printf()                 */
+#include <stdlib.h>         /* exit(), malloc(), free() */
+#include <sys/types.h>      /* key_t, sem_t, pid_t      */
+#include <sys/shm.h>        /* shmat(), IPC_RMID        */
+#include <errno.h>          /* errno, ECHILD            */
+#include <semaphore.h>      /* sem_open(), sem_destroy(), sem_wait().. */
+#include <fcntl.h>          /* O_CREAT, O_EXEC          */
+
+#include <sys/wait.h> 
 
 //*********NOTE At LINE ~30 a specific directory is used************************
 void boardWriter(char board[][5]); //function to write board state
@@ -22,7 +28,7 @@ int main()
   char gameboard[5][5];                                   //create a blank gameboard
   std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');     //fill the empty spots with "-"
 
-  //pid_t pid1, pid2, pid3;     //create ID's for three difference processes
+
 
   key_t shmkey;     //shared memory key
 
@@ -39,12 +45,85 @@ int main()
   int * p = (int * ) shmat (shmid, NULL, 0);   // attach p to shared memory
   *p = 0;
   printf ("p=%d is allocated in shared memory. \n\n", *p);
+
+  sem_t *sem;     //synch semaphore   //*shared
+  //unsigned int value;   //semaphore value
+  sem = sem_open ("producer", O_CREAT | O_EXCL, 0644, 1); //name of semaphore is "producer"; semaphore can be reached using this Name
   boardWriter(gameboard);     //producer creates a blank gameboard
 
-  //if (pid1=fork()==0)         //first child is created for Tic-Tac-Toe player "X"
+  //pid_t playerX, playerO, referee;     //create ID's for three difference processes
 
 
+/*
+  playerX = fork ();           //create fork for one player
+  if (playerX < 0) {         //check for error
+    sem_unlink ("producer");
+    sem_close(sem);
+    std::cout <<"Fork Error \n";
+    exit(0);
+  }
+
+  playerO = fork ();           //create fork for second player
+  if (playerO < 0) {         //check for error
+    sem_unlink ("producer");
+    sem_close(sem);
+    std::cout <<"Fork Error \n";
+  }
+
+  referee = fork ();           //create fork for referee
+  if (playerX < 0) {         //check for error
+    sem_unlink ("producer");
+    sem_close(sem);
+    std::cout <<"Fork Error \n";
+  }
+*/
+pid_t pid;
+int i{};
+for (i; i < 3; i++) {
+  pid = fork();
+  if (pid < 0){
+    sem_unlink ("producer");
+    sem_close(sem);
+    std::cout <<"Fork Error \n";
+  }
+}
+
+//************************
+//*******Producer
+
+  if (pid !=0) {
+    //wait for child to exit
+    while (pid = waitpid (-1, NULL, 0)) {
+        if (errno == ECHILD)
+          break;
+    }
+
+    std::cout <<"\n All children have exited. \n";
+
+    //shared memory detach
+    shmdt (p);
+    shmctl (shmid, IPC_RMID, 0);
+
+    /* cleanup semaphores */
+    sem_unlink ("pSem");
+    sem_close(sem);
+    /* unlink prevents the semaphore existing forever */
+    /* if a crash occurs during the execution         */
+    exit (0);
+  }
+
+  //********child
+  else {
+    sem_wait (sem);  //P operation
+    printf ("  Child(%d) is in critical section.\n", i);
+    sleep (1);
+    sem_post (sem);   //v operation
+    exit(0);
+  }
+  return EXIT_SUCCESS;
+}
 //**********TEST LOOP *************************
+/*
   int x, y;
   for(int i{}; i<10; i++)
   {
@@ -60,7 +139,7 @@ int main()
   }
 //**************</ TEST LOOP> ************
   return EXIT_SUCCESS;
-}
+}*/
 
 void boardWriter(char board[][5])
 {
