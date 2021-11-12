@@ -13,7 +13,7 @@
 #include <semaphore.h>      /* sem_open(), sem_destroy(), sem_wait().. */
 #include <fcntl.h>          /* O_CREAT, O_EXEC          */
 
-#include <sys/wait.h> 
+#include <sys/wait.h>
 
 //*********NOTE At LINE ~30 a specific directory is used************************
 void boardWriter(char board[][5]); //function to write board state
@@ -77,6 +77,29 @@ int main()
     std::cout <<"Fork Error \n";
   }
 */
+
+//**********TEST LOOP *************************
+
+int x, y;
+for(int i{}; i<10; i++)
+  {
+    randomPlay(x,y, gameboard, 'X');
+    randomPlay(x,y, gameboard, 'O');
+    char winnerFound = victory(gameboard);
+    if (winnerFound != '-')
+    {  std::cout << "\nWe have a Winner!!!!!!\n"
+      << "Player "<<winnerFound << " has won the game\n";
+      break;
+    }  else
+      std::cout << "No winner yet\n";
+  }
+//**************</ TEST LOOP> ************
+  return EXIT_SUCCESS;
+
+
+
+
+
 pid_t pid;
 int i{};
 for (i; i < 3; i++) {
@@ -86,6 +109,7 @@ for (i; i < 3; i++) {
     sem_close(sem);
     std::cout <<"Fork Error \n";
   }
+  std::cout<<"TEST  fork PID is: "<<pid <<"\n";
 }
 
 //************************
@@ -113,33 +137,18 @@ for (i; i < 3; i++) {
   }
 
   //********child
-  else {
-    sem_wait (sem);  //P operation
-    printf ("  Child(%d) is in critical section.\n", i);
-    sleep (1);
-    sem_post (sem);   //v operation
-    exit(0);
+  else{
+      sem_wait (sem);           /* P operation */
+      printf ("  Child(%d) is in critical section.\n", i);
+      sleep (1);
+      *p += i % 3;              /* increment *p by 0, 1 or 2 based on i */
+      printf ("  Child(%d) new value of *p=%d.\n", i, *p);
+      sem_post (sem);           /* V operation */
+      exit (0);
   }
   return EXIT_SUCCESS;
 }
-//**********TEST LOOP *************************
-/*
-  int x, y;
-  for(int i{}; i<10; i++)
-  {
-    randomPlay(x,y, gameboard, 'X');
-    randomPlay(x,y, gameboard, 'O');
-    char winnerFound = victory(gameboard);
-    if (winnerFound != '-')
-    {  std::cout << "\nWe have a Winner!!!!!!\n"
-      << "Player "<<winnerFound << " has won the game\n";
-      break;
-    }  else
-      std::cout << "No winner yet\n";
-  }
-//**************</ TEST LOOP> ************
-  return EXIT_SUCCESS;
-}*/
+
 
 void boardWriter(char board[][5])
 {
@@ -173,19 +182,32 @@ char victory(char board[][5])
 
       if(board[row][cols] != '-'&& board[row][cols] == board[row][cols+1])      //check for horizontal winner
         if(board[row][cols] != '-'&& board[row][cols] == board[row][cols+2])
-          return winner = board[row][cols];
+          if(board[row][cols] != '-'&& board[row][cols] == board[row][cols+3]){
+            std::cout << "horizontal\n";
+            std::cout <<"Last winning square: " << row<<" " << cols+3;
+            return winner = board[row][cols];}
 
       if(board[row][cols] != '-'&& board[row][cols] == board[row+1][cols])        //check for vertical winner
         if(board[row][cols] != '-'&& board[row][cols] == board[row+2][cols])
-          return winner = board[row][cols];
+          if(board[row][cols] != '-'&& board[row][cols] == board[row+3][cols]){
+            std::cout << "Vertical\n";
+            std::cout <<"Last winning square: " << row+3 <<" " << cols;
+            return winner = board[row][cols];}
 
       if(board[row][cols] != '-'&& board[row][cols] == board[row+1][cols+1])    //check for Right diagonal winnerFound
         if(board[row][cols] != '-'&& board[row][cols] == board[row+2][cols+2])
-          return winner = board[row][cols];
+          if(board[row][cols] != '-'&& board[row][cols] == board[row+3][cols+3]){
+            std::cout <<"R Diag\n";
+            std::cout <<"Last winning square: " << row+3 <<" " << cols+3;
+            return winner = board[row][cols];}
 
       if(board[row][cols] != '-'&& board[row][cols] == board[row+1][cols-1])    //check for Left diagonal winnerFound
         if(board[row][cols] != '-'&& board[row][cols] == board[row+2][cols-2])
-          return winner = board[row][cols];
+          if(board[row][cols] != '-'&& board[row][cols] == board[row+3][cols-3]){
+              std::cout <<"L Diag\n";
+              std::cout <<"Starting square: " << row <<" " << cols;
+              std::cout <<"\nLast winning square: " << row+3 <<" " << cols-3;
+              return winner = board[row][cols];}
     }
   }
   return winner;
@@ -206,6 +228,8 @@ void randomPlay(int& row, int& col, char board[][5], char player)
     board[row][col] = player;
     boardWriter(board);
 }
+
+
 /*int sem_create()
 {
   if((shm_id = shmget(IPC_PRIVATE, sizeof(int), SHM_R | SHM_W)) < 0) {
