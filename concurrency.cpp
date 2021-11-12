@@ -18,7 +18,8 @@
 //*********NOTE At LINE ~30 a specific directory is used************************
 void boardWriter(char board[][5]); //function to write board state
 char victory(char board[][5]); //function to determine if a player won
-void randomPlay(int& row, int& col, char board[][5], char player); //function to randomly select a location for play
+//void randomPlay(int& row, int& col, char board[][5], char player); //function to randomly select a location for play
+void randomPlay(char board[][5], char player);
 int sem_create();  //a function to create a semaphore
 
 int main()
@@ -46,57 +47,63 @@ int main()
   *p = 0;
   printf ("p=%d is allocated in shared memory. \n\n", *p);
 
+  //gameboard = shmat (shmid, NULL, 0);
+
   sem_t *sem;     //synch semaphore   //*shared
   //unsigned int value;   //semaphore value
   sem = sem_open ("producer", O_CREAT | O_EXCL, 0644, 1); //name of semaphore is "producer"; semaphore can be reached using this Name
   boardWriter(gameboard);     //producer creates a blank gameboard
 
-  //pid_t playerX, playerO, referee;     //create ID's for three difference processes
 
-
-/*
-  playerX = fork ();           //create fork for one player
-  if (playerX < 0) {         //check for error
-    sem_unlink ("producer");
-    sem_close(sem);
-    std::cout <<"Fork Error \n";
-    exit(0);
-  }
-
-  playerO = fork ();           //create fork for second player
-  if (playerO < 0) {         //check for error
-    sem_unlink ("producer");
-    sem_close(sem);
-    std::cout <<"Fork Error \n";
-  }
-
-  referee = fork ();           //create fork for referee
-  if (playerX < 0) {         //check for error
-    sem_unlink ("producer");
-    sem_close(sem);
-    std::cout <<"Fork Error \n";
-  }
-*/
 
 //**********TEST LOOP *************************
 
-int x, y;
-for(int i{}; i<10; i++)
+
+for(int i{}; i<25; i++)
   {
-    randomPlay(x,y, gameboard, 'X');
-    randomPlay(x,y, gameboard, 'O');
+    randomPlay(gameboard, 'X');
+    randomPlay(gameboard, 'O');
     char winnerFound = victory(gameboard);
-    if (winnerFound != '-')
-    {  std::cout << "\nWe have a Winner!!!!!!\n"
-      << "Player "<<winnerFound << " has won the game\n";
-      break;
-    }  else
+    if (winnerFound == '-')
+    {
       std::cout << "No winner yet\n";
+    }  else if (winnerFound == 'Z') {
+      std::cout << "The Game is a TIE\n";
+      break;
+    } else {
+      std::cout << "\nWe have a Winner!!!!!!\n"
+       << "Player "<<winnerFound << " has won the game\n";
+       break;
+    }
   }
 //**************</ TEST LOOP> ************
   return EXIT_SUCCESS;
 
 
+pid_t playerX, playerO, referee;     //create ID's for three difference processes
+
+
+playerX = fork ();           //create fork for one player
+if (playerX < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+  exit(0);
+}
+
+playerO = fork ();           //create fork for second player
+if (playerO < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+}
+
+referee = fork ();           //create fork for referee
+if (playerX < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+}
 
 
 
@@ -109,6 +116,8 @@ for (i; i < 3; i++) {
     sem_close(sem);
     std::cout <<"Fork Error \n";
   }
+  else if (pid ==0)
+    break;
   std::cout<<"TEST  fork PID is: "<<pid <<"\n";
 }
 
@@ -129,7 +138,7 @@ for (i; i < 3; i++) {
     shmctl (shmid, IPC_RMID, 0);
 
     /* cleanup semaphores */
-    sem_unlink ("pSem");
+    sem_unlink ("producer");
     sem_close(sem);
     /* unlink prevents the semaphore existing forever */
     /* if a crash occurs during the execution         */
@@ -143,11 +152,14 @@ for (i; i < 3; i++) {
       sleep (1);
       *p += i % 3;              /* increment *p by 0, 1 or 2 based on i */
       printf ("  Child(%d) new value of *p=%d.\n", i, *p);
-      sem_post (sem);           /* V operation */
+      //randomPlay(gameboard, i);
+      sem_post (sem);           /* V / Signal operation */
       exit (0);
   }
   return EXIT_SUCCESS;
 }
+
+///*************FUNCTION DEFINITIONS*******************************
 
 
 void boardWriter(char board[][5])
@@ -175,6 +187,7 @@ void boardWriter(char board[][5])
 char victory(char board[][5])
 {
   char winner = '-';
+  int counter = 0;
   for(int row{}; row<5; row++)               //outter loop to move down rows
   {
     for(int cols{};cols<5; cols++)          //inner loop to move across columns
@@ -208,11 +221,17 @@ char victory(char board[][5])
               std::cout <<"Starting square: " << row <<" " << cols;
               std::cout <<"\nLast winning square: " << row+3 <<" " << cols-3;
               return winner = board[row][cols];}
+      if(board[row][cols] == 'X' || board[row][cols] == 'O'){
+        counter++;
+        std::cout<<"counter++ Space is: "<<board[row][cols]<< " counter is: "<< counter <<"\n";
+      }
+      if(counter == 25)
+        return winner = 'Z';  //magic character for tie condition
     }
   }
   return winner;
 }
-
+/*
 void randomPlay(int& row, int& col, char board[][5], char player)
 {
     int random_max = 5;
@@ -227,8 +246,23 @@ void randomPlay(int& row, int& col, char board[][5], char player)
     }
     board[row][col] = player;
     boardWriter(board);
-}
+}*/
+void randomPlay(char board[][5], char player)
+{
 
+    int random_max = 5;
+    int row = rand() % random_max;
+    std::cout << "Row in randomPlay" << row <<"\n";
+    int col = rand() % random_max;
+    std::cout << "Col in randomPlay" << col <<"\n";
+    while(board[row][col] !='-')
+    {
+      row = rand() % random_max;
+      col = rand() % random_max;
+    }
+    board[row][col] = player;
+    boardWriter(board);
+}
 
 /*int sem_create()
 {
