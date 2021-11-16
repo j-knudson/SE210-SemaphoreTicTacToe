@@ -97,31 +97,7 @@ for(int i{}; i<25; i++)
   return EXIT_SUCCESS;
 */
 
-pid_t playerX, playerO, referee;     //create ID's for three difference processes
 
-
-playerX = fork ();           //create fork for one player
-if (playerX < 0) {         //check for error
-  sem_unlink ("producer");
-  sem_close(sem);
-  std::cout <<"Fork Error \n";
-  exit(0);
-}
-std::cout <<"playerX is: " << playerX;
-
-playerO = fork ();           //create fork for second player
-if (playerO < 0) {         //check for error
-  sem_unlink ("producer");
-  sem_close(sem);
-  std::cout <<"Fork Error \n";
-}
-
-referee = fork ();           //create fork for referee
-if (playerX < 0) {         //check for error
-  sem_unlink ("producer");
-  sem_close(sem);
-  std::cout <<"Fork Error \n";
-}
 
 
 
@@ -138,12 +114,119 @@ for (i; i < 3; i++) {
   }
   else if (pid ==0)
     break;
-  std::cout<<"TEST  fork PID is: "<<pid <<"\n";
+  //std::cout<<"TEST  fork PID is: "<<pid <<"\n";
 }
 
 //************************
-//*******Producer
+/*
+if (playerX = fork ()<0) {           //create fork for one player                   //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+  exit(0);
+} else if (playerX == 0) {
+  sem_wait(sem);
+  std::cout<<"Player X is playing\n";
+  randomPlay(gameboard, "X");
+}*/
 
+
+
+
+
+
+
+//*******Producer
+pid_t playerX, playerO, referee;     //create ID's for three difference processes
+char winnerFound;
+
+/*
+playerX = fork ();           //create fork for one player
+if (playerX < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+  exit(0);
+}
+std::cout <<"playerX is: " << playerX <<"\n";
+
+playerO = fork ();           //create fork for second player
+if (playerO < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+}
+std::cout <<"playerO is: " << playerO <<"\n";
+referee = fork ();           //create fork for referee
+if (playerX < 0) {         //check for error
+  sem_unlink ("producer");
+  sem_close(sem);
+  std::cout <<"Fork Error \n";
+}
+std::cout <<"referee is: " << referee <<"\n";
+
+if (playerX = fork() == 0) {
+    sem_wait(sem);
+    randomPlay(gameboard, 'X');
+    sem_post(sem);
+}  else if (playerO = fork == 0) {
+  sem_wait (sem);
+  randomPlay(gameboard, 'O');
+  sem_post (sem);
+} else if (referee = fork() == 0){
+  sem_wait (sem);
+  winnerFound = victory(gameboard);
+} else {
+  while(wait(NULL)>0);
+  std::cout <<"All children clear\n";
+}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  char winnerFound;
+  while (winnerFound != 'X' || winnerFound != 'Z' || winnerFound != 'O')
+  {
+    if (playerX == 0) {
+        sem_wait(sem);
+        randomPlay(gameboard, 'X');
+        sem_post(sem);
+    } else if (playerO == 0) {
+        sem_wait(sem);
+        randomPlay(gameboard, 'O');
+        sem_post(sem);
+    } else if(referee == 0){
+        sem_wait(sem);
+        winnerFound = victory(gameboard);
+    } else {
+        if (winnerFound == '-')
+        {
+          std::cout << "No winner yet\n";
+        }  else if (winnerFound == 'Z') {
+          std::cout << "The Game is a TIE\n";
+          break;
+        } else {
+          std::cout << "\nWe have a Winner!!!!!!\n"
+           << "Player "<<winnerFound << " has won the game\n";
+           return 0;
+        }
+      }
+    }
+}*/
+
+
+//*****************************
+//****************Parent
+for (int j = 0; j<25; j++) {
   if (pid !=0) {
     //wait for child to exit
     while (pid = waitpid (-1, NULL, 0)) {
@@ -170,11 +253,33 @@ for (i; i < 3; i++) {
   else{
       sem_wait (sem);           // P operation //
       printf ("  Child(%d) is in critical section.\n", i);
+      if (i == 0) {
+        randomPlay(gameboard, 'X');
+        std::cout << "Player X's turn\n";
+      } else if (i == 1) {
+        randomPlay(gameboard, 'O');
+        std::cout << "Player O's turn\n";
+      } else if (i ==2) {
+        winnerFound = victory(gameboard);
+        std::cout << "Referee is checking\n";
+      }
       sleep (1);
-      *p += i % 3;              //increment *p by 0, 1 or 2 based on i //
-      randomPlay(gameboard, i);
-      printf ("  Child(%d) new value of *p=%d.\n", i, *p);
-      //randomPlay(gameboard, i);
+      //*p += i % 3;              //increment *p by 0, 1 or 2 based on i //
+      std::cout <<"Winnerfound is: " <<winnerFound;
+
+      if (winnerFound == 'X' || winnerFound == 'O')
+      {
+        std::cout << "\nWe have a Winner!!!!!!\n";
+        std::cout << "Player "<<winnerFound <<" won the game!\n";
+        return 0;
+      }  else if (winnerFound == 'Z') {
+        std::cout << "The Game is a TIE\n";
+        return 0;
+      } else {
+        std::cout << "No winner yet\n";
+      }
+    }
+      //printf ("  Child(%d) new value of *p=%d.\n", i, *p);
       sem_post (sem);           // V / Signal operation //
       exit (0);
   }
