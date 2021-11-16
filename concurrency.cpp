@@ -104,7 +104,7 @@ for(int i{}; i<25; i++)
 pid_t pid;
 int i{};
 
-
+/*
 for (i; i < 3; i++) {
   pid = fork();
   if (pid < 0){
@@ -115,7 +115,7 @@ for (i; i < 3; i++) {
   else if (pid ==0)
     break;
   //std::cout<<"TEST  fork PID is: "<<pid <<"\n";
-}
+}*/
 
 //************************
 /*
@@ -226,7 +226,18 @@ if (playerX = fork() == 0) {
 
 //*****************************
 //****************Parent
-for (int j = 0; j<25; j++) {
+for(int j = 0; j<25; j++) {
+  for (i=0; i < 3; i++) {
+    pid = fork();
+    if (pid < 0){
+      sem_unlink ("producer");
+      sem_close(sem);
+      std::cout <<"Fork Error \n";
+    }
+    else if (pid ==0)
+      break;
+    //std::cout<<"TEST  fork PID is: "<<pid <<"\n";
+  }
   if (pid !=0) {
     //wait for child to exit
     while (pid = waitpid (-1, NULL, 0)) {
@@ -281,8 +292,10 @@ for (int j = 0; j<25; j++) {
     }
       //printf ("  Child(%d) new value of *p=%d.\n", i, *p);
       sem_post (sem);           // V / Signal operation //
-      exit (0);
-  }
+
+      //exit (0);
+
+}
 
   ///******START OF TRIAL 2
 
