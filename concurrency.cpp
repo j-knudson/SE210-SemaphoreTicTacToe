@@ -30,8 +30,8 @@ int main()
 
 
   //char * gameboard[5][5];
-  char gameboard[5][5];                                   //create a blank gameboard
-  std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');     //fill the empty spots with "-"
+  //char gameboard[5][5];                                   //create a blank gameboard
+  //std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');     //fill the empty spots with "-"
 
 
 
@@ -53,7 +53,12 @@ int main()
   //gameboard = shmat(shmid, (void *)0, 0);
   //gameboard = shmat(shmid, NULL, 0);
   //gameboard[5][5];
-  std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');
+  //std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');
+
+
+  int ARRAY_SIZE = (5)*(5)*sizeof(char);
+  char (*gameboard)[5] = (char (*)[5]) mmap(NULL, ARRAY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+  std::fill(gameboard[0], gameboard[0] + 5 * 5, '-');     //fill the empty spots with "-"
 
   int * p = (int * ) shmat (shmid, NULL, 0);   // attach p to shared memory
   *p = 0;
@@ -70,7 +75,7 @@ int main()
 
 //**********TEST LOOP *************************
 
-
+/*
 for(int i{}; i<25; i++)
   {
     randomPlay(gameboard, 'X');
@@ -90,8 +95,8 @@ for(int i{}; i<25; i++)
   }
 //**************</ TEST LOOP> ************
   return EXIT_SUCCESS;
+*/
 
-/*
 pid_t playerX, playerO, referee;     //create ID's for three difference processes
 
 
@@ -173,7 +178,7 @@ for (i; i < 3; i++) {
       sem_post (sem);           // V / Signal operation //
       exit (0);
   }
-  */
+
   ///******START OF TRIAL 2
 
 /*
